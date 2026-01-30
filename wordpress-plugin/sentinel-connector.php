@@ -22,6 +22,7 @@ class Sentinel_Connector {
         // Initialize settings
         add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
         add_action( 'admin_init', array( $this, 'register_settings' ) );
+        add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
 
         // Hook into WooCommerce events (if active)
         if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) ) {
@@ -42,6 +43,114 @@ class Sentinel_Connector {
     public function register_settings() {
         register_setting( 'sentinel_options', 'sentinel_api_url' );
         register_setting( 'sentinel_options', 'sentinel_api_key' );
+    }
+
+    public function register_rest_routes() {
+        register_rest_route( 'sentinel/v1', '/stats', array(
+            'methods'  => 'GET',
+            'callback' => array( $this, 'handle_stats_request' ),
+            'permission_callback' => '__return_true', // we do our own header auth below
+        ) );
+    }
+
+    private function authorize_request( $request ) {
+        $key = $request->get_header( 'x-sentinel-key' );
+        if ( empty( $this->api_key ) ) {
+            return false;
+        }
+        return hash_equals( (string) $this->api_key, (string) $key );
+    }
+
+    public function handle_stats_request( $request ) {
+        if ( ! $this->authorize_request( $request ) ) {
+            return new WP_REST_Response( array( 'error' => 'Unauthorized' ), 401 );
+        }
+
+        if ( ! function_exists( 'stats_get_csv' ) ) {
+            return new WP_REST_Response( array(
+                'error' => 'Jetpack stats not available (stats_get_csv missing). Ensure Jetpack is installed and Stats is connected.'
+            ), 400 );
+        }
+
+        $range = sanitize_text_field( $request->get_param( 'range' ) );
+        if ( empty( $range ) ) $range = 'today';
+
+        // Always fetch enough days to find the right date(s)
+        $fetch_days = 31; 
+        if ( $range === 'week' ) $fetch_days = 14; 
+        if ( $range === 'today' ) $fetch_days = 7; 
+
+        // Cache key includes date to auto-expire at midnight
+        $today_date = current_time( 'Y-m-d' );
+        $cache_key = 'sentinel_stats_' . md5( $range . '_' . $today_date );
+        
+        // For 'today', we want fresher data (1 min cache). Others can be 10 mins.
+        $cache_time = ( $range === 'today' ) ? 60 : 10 * MINUTE_IN_SECONDS;
+
+        $cached = get_transient( $cache_key );
+        if ( false !== $cached ) {
+            return new WP_REST_Response( $cached, 200 );
+        }
+
+        $rows = stats_get_csv( 'views', array( 'days' => $fetch_days, 'limit' => -1 ) );
+        if ( ! is_array( $rows ) ) $rows = array();
+
+        $total_views = 0;
+        $total_visitors = 0;
+        $debug_dates = array();
+
+        foreach ( $rows as $row ) {
+            // Jetpack returns 'date' as 'YYYY-MM-DD'
+            $row_date = isset($row['date']) ? $row['date'] : '';
+            if ( ! $row_date ) continue;
+
+            // Normalize dates to ensure string comparison works
+            $row_date_norm = date( 'Y-m-d', strtotime( $row_date ) );
+            $today_date_norm = date( 'Y-m-d', strtotime( $today_date ) );
+
+            $include = false;
+
+            if ( $range === 'today' ) {
+                if ( $row_date_norm === $today_date_norm ) $include = true;
+            } elseif ( $range === 'week' || $range === '7d' ) {
+                // Check if date is within last 7 days
+                if ( $row_date_norm >= date( 'Y-m-d', strtotime( '-6 days', current_time( 'timestamp' ) ) ) ) {
+                    $include = true;
+                }
+            } elseif ( $range === 'month' || $range === '30d' ) {
+                if ( $row_date_norm >= date( 'Y-m-d', strtotime( '-29 days', current_time( 'timestamp' ) ) ) ) {
+                    $include = true;
+                }
+            }
+
+            if ( $include ) {
+                if ( isset( $row['views'] ) ) $total_views += intval( $row['views'] );
+                if ( isset( $row['visitors'] ) ) $total_visitors += intval( $row['visitors'] );
+                $debug_dates[] = $row_date;
+            }
+        }
+
+        // Capture the last row for debugging/fallback context
+        $last_row = end( $rows );
+        
+        $payload = array(
+            'source' => 'jetpack',
+            'range' => $range,
+            'totals' => array(
+                'views' => $total_views,
+                'visitors' => $total_visitors,
+            ),
+            'meta' => array(
+                'site_date' => $today_date,
+                'included_dates' => $debug_dates,
+                'last_available_entry' => $last_row ? $last_row : null,
+                'generated_at' => current_time( 'mysql' ),
+            )
+        );
+
+        set_transient( $cache_key, $payload, $cache_time );
+
+        return new WP_REST_Response( $payload, 200 );
     }
 
     public function options_page() {

@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Settings, Activity, Briefcase, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Settings, Activity, Briefcase, Menu, X, Cpu } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 const navItems = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Operations', href: '/operations', icon: Activity },
   { name: 'Projects', href: '/projects', icon: Briefcase },
+  { name: 'System', href: '/code', icon: Cpu },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 

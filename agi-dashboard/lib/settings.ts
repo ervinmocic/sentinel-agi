@@ -8,13 +8,25 @@ export interface SystemSettings {
   trello_api_token: string;
   openai_api_key: string;
   mailchimp_api_key: string;
+  elevenlabs_api_key: string;
+  elevenlabs_voice_id: string;
+  tavily_api_key: string;
+  wolfram_app_id: string;
+  wordpress_site_url: string;
+  wordpress_secret_key: string;
 }
 
 const DEFAULT_SETTINGS: SystemSettings = {
   trello_api_key: '',
   trello_api_token: '',
   openai_api_key: '',
-  mailchimp_api_key: ''
+  mailchimp_api_key: '',
+  elevenlabs_api_key: '',
+  elevenlabs_voice_id: '',
+  tavily_api_key: '',
+  wolfram_app_id: '',
+  wordpress_site_url: '',
+  wordpress_secret_key: ''
 };
 
 export class SettingsManager {

@@ -9,16 +9,27 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@elevenlabs/elevenlabs-js": "^2.33.0",
+    "@tavily/core": "^0.7.1",
+    "duck-duck-scrape": "^2.2.7",
+    "katex": "^0.16.28",
     "lucide-react": "^0.563.0",
     "next": "16.1.6",
     "openai": "^6.17.0",
     "pinecone-client": "^2.0.0",
+    "prismjs": "^1.30.0",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "react-markdown": "^10.1.0",
+    "react-simple-code-editor": "^0.14.1",
+    "rehype-katex": "^7.0.1",
+    "remark-math": "^6.0.0",
+    "wolfram-alpha-api": "^0.2.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20.19.30",
+    "@types/prismjs": "^1.26.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",

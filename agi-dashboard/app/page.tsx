@@ -16,6 +16,7 @@ interface ActivityLog {
 export default function Home() {
   const [mailchimpStats, setMailchimpStats] = useState({ members: 0, openRate: 0, loading: true });
   const [activities, setActivities] = useState<ActivityLog[]>([]);
+  const [wpStatus, setWpStatus] = useState<'Checking...' | 'Connected' | 'Needs setup' | 'Offline'>('Checking...');
 
   useEffect(() => {
     async function fetchData() {
@@ -62,7 +63,26 @@ export default function Home() {
       }
     }
 
+    async function checkWordpress() {
+      try {
+        const res = await fetch('/api/wordpress/stats?range=today', { cache: 'no-store' });
+        if (res.ok) {
+          setWpStatus('Connected');
+          return;
+        }
+        // 400s are typically "not configured" (missing URL/secret)
+        if (res.status === 400 || res.status === 401) {
+          setWpStatus('Needs setup');
+          return;
+        }
+        setWpStatus('Offline');
+      } catch {
+        setWpStatus('Offline');
+      }
+    }
+
     fetchData();
+    checkWordpress();
     // Poll for activities every 10 seconds
     const interval = setInterval(fetchData, 10000);
     return () => clearInterval(interval);
@@ -126,7 +146,7 @@ export default function Home() {
                  <h3 className="text-lg font-semibold text-white">Neural Links</h3>
                  <p className="text-sm text-gray-400">System Integrations</p>
                </div>
-               <span className="text-2xl font-bold text-white">3</span>
+               <span className="text-2xl font-bold text-white">4</span>
              </div>
 
              <div className="space-y-4">
@@ -146,7 +166,7 @@ export default function Home() {
                />
                <IntegrationRow 
                  icon={Zap} 
-                 name="OpenAI" 
+                 name="Reasoning Engine" 
                  status="Active" 
                  color="text-green-400" 
                  bg="bg-green-400/10"
@@ -154,7 +174,7 @@ export default function Home() {
                <IntegrationRow 
                  icon={Globe} 
                  name="WordPress" 
-                 status="Listening" 
+                 status={wpStatus} 
                  color="text-purple-400" 
                  bg="bg-purple-400/10"
                />

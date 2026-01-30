@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export default function SettingsPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -11,6 +11,12 @@ export default function SettingsPage() {
   const [apiToken, setApiToken] = useState('');
   const [openaiKey, setOpenaiKey] = useState('');
   const [mailchimpKey, setMailchimpKey] = useState('');
+  const [elevenKey, setElevenKey] = useState('');
+  const [elevenVoiceId, setElevenVoiceId] = useState('');
+  const [tavilyKey, setTavilyKey] = useState('');
+  const [wolframKey, setWolframKey] = useState('');
+  const [wpUrl, setWpUrl] = useState('');
+  const [wpSecret, setWpSecret] = useState('');
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -35,9 +41,15 @@ export default function SettingsPage() {
         setApiToken(data.trello_api_token || '');
         setOpenaiKey(data.openai_api_key || '');
         setMailchimpKey(data.mailchimp_api_key || '');
+        setElevenKey(data.elevenlabs_api_key || '');
+        setElevenVoiceId(data.elevenlabs_voice_id || '');
+        setTavilyKey(data.tavily_api_key || '');
+        setWolframKey(data.wolfram_app_id || '');
+        setWpUrl(data.wordpress_site_url || '');
+        setWpSecret(data.wordpress_secret_key || '');
       }
-    } catch (e) {
-      console.error("Failed to load settings", e);
+    } catch (_e) {
+      console.error("Failed to load settings", _e);
     } finally {
       setLoading(false);
     }
@@ -53,7 +65,13 @@ export default function SettingsPage() {
           trello_api_key: apiKey,
           trello_api_token: apiToken,
           openai_api_key: openaiKey,
-          mailchimp_api_key: mailchimpKey
+          mailchimp_api_key: mailchimpKey,
+          elevenlabs_api_key: elevenKey,
+          elevenlabs_voice_id: elevenVoiceId,
+          tavily_api_key: tavilyKey,
+          wolfram_app_id: wolframKey,
+          wordpress_site_url: wpUrl,
+          wordpress_secret_key: wpSecret
         })
       });
       
@@ -63,7 +81,7 @@ export default function SettingsPage() {
       } else {
         setStatus('Save Failed');
       }
-    } catch (e) {
+    } catch (_e) {
       setStatus('Error saving settings');
     }
   };
@@ -174,6 +192,106 @@ export default function SettingsPage() {
             </div>
              <p className="text-xs text-gray-500">
               Generate an API key in Mailchimp Account &rarr; Extras &rarr; API keys.
+            </p>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-gray-800 bg-gray-900/50 p-6">
+          <h3 className="font-semibold text-lg mb-4 text-purple-400">Voice (ElevenLabs)</h3>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-1">ElevenLabs API Key</label>
+              <input 
+                type="password" 
+                value={elevenKey} 
+                onChange={(e) => setElevenKey(e.target.value)}
+                className="w-full rounded-md border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="xi-..."
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-1">Voice ID</label>
+              <input 
+                type="text" 
+                value={elevenVoiceId} 
+                onChange={(e) => setElevenVoiceId(e.target.value)}
+                className="w-full rounded-md border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="JBFqnCBsd6RMkjVDRZzb"
+              />
+            </div>
+             <p className="text-xs text-gray-500">
+              Required for voice features. Get both from the ElevenLabs dashboard.
+            </p>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-gray-800 bg-gray-900/50 p-6">
+          <h3 className="font-semibold text-lg mb-4 text-orange-400">Web Search (Tavily)</h3>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-1">Tavily API Key</label>
+              <input 
+                type="password" 
+                value={tavilyKey} 
+                onChange={(e) => setTavilyKey(e.target.value)}
+                className="w-full rounded-md border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="tvly-..."
+              />
+            </div>
+             <p className="text-xs text-gray-500">
+              Required for reliable web search. Get a free key from <a href="https://tavily.com" target="_blank" className="text-orange-400 hover:underline">Tavily</a>.
+            </p>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-gray-800 bg-gray-900/50 p-6">
+          <h3 className="font-semibold text-lg mb-4 text-pink-400">Knowledge Engine (Wolfram Alpha)</h3>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-1">App ID</label>
+              <input 
+                type="password" 
+                value={wolframKey} 
+                onChange={(e) => setWolframKey(e.target.value)}
+                className="w-full rounded-md border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                placeholder="APP-ID..."
+              />
+            </div>
+             <p className="text-xs text-gray-500">
+              Required for calculations and facts. Get an App ID from <a href="https://developer.wolframalpha.com" target="_blank" className="text-pink-400 hover:underline">Wolfram Developer Portal</a>.
+            </p>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-gray-800 bg-gray-900/50 p-6">
+          <h3 className="font-semibold text-lg mb-4 text-cyan-400">WordPress / Jetpack</h3>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-1">Site URL</label>
+              <input
+                type="text"
+                value={wpUrl}
+                onChange={(e) => setWpUrl(e.target.value)}
+                className="w-full rounded-md border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                placeholder="https://your-site.com"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-1">Sentinel Secret Key</label>
+              <input
+                type="password"
+                value={wpSecret}
+                onChange={(e) => setWpSecret(e.target.value)}
+                className="w-full rounded-md border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                placeholder="Same as WordPress plugin secret"
+              />
+            </div>
+            <p className="text-xs text-gray-500">
+              Required for fetching Jetpack Stats via the WordPress plugin endpoint.
             </p>
           </div>
         </div>

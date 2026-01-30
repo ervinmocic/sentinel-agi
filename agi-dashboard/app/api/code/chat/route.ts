@@ -9,21 +9,62 @@ import { SafeSearchType, search } from 'duck-duck-scrape';
 import { tavily } from '@tavily/core';
 // @ts-ignore
 import WolframAlphaAPI from 'wolfram-alpha-api';
+import fs from 'fs';
+import path from 'path';
 
 function normalizeName(s: string): string {
   return (s ?? '').trim().toLowerCase();
 }
 
 function userExplicitlyRequestedMove(userMessage: string) {
-  // Heuristic gate: only allow arbitrary list moves when user explicitly says so.
-  // Completion should use complete_task/reopen_task instead.
   return /\b(move|moved|moving|transfer|relocate|put it in|put this in|move it to|move to)\b/i.test(
     userMessage || ''
   );
 }
 
-// Define tools for OpenAI
 const toolsDefinition = [
+  {
+    type: "function",
+    function: {
+      name: "list_files",
+      description: "List files in a directory",
+      parameters: {
+        type: "object",
+        properties: {
+          dir: { type: "string", description: "Directory path relative to root" }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "read_file",
+      description: "Read content of a file",
+      parameters: {
+        type: "object",
+        properties: {
+          filepath: { type: "string", description: "File path relative to root" }
+        },
+        required: ["filepath"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "write_file",
+      description: "Write content to a file. CAUTION: Overwrites existing content.",
+      parameters: {
+        type: "object",
+        properties: {
+          filepath: { type: "string", description: "File path relative to root" },
+          content: { type: "string", description: "Content to write" }
+        },
+        required: ["filepath", "content"]
+      }
+    }
+  },
   {
     type: "function",
     function: {
@@ -322,7 +363,7 @@ export async function POST(req: Request) {
           - Key Facts: ${memory.key_facts.join("; ") || "None"}
           - Long Term Goals: ${memory.long_term_goals.join("; ") || "None"}
           
-          You have direct, real-time control over Trello and Mailchimp.
+          You have direct, real-time control over Trello, Mailchimp, and now the FILE SYSTEM of this dashboard.
           
           CORE PROTOCOL:
           1. MEMORY CHECK: If the user provides new core info about the company, save it using 'save_memory'.
@@ -340,6 +381,12 @@ export async function POST(req: Request) {
           
           To mark a task as incomplete again:
           - Use 'reopen_task' (removes the checkmark).
+          
+          FILE SYSTEM CAPABILITIES:
+          - You can LIST files in the dashboard directory using 'list_files'.
+          - You can READ any file using 'read_file'.
+          - You can EDIT any file using 'write_file'.
+          - BE CAREFUL when editing. Ensure you read the file first to understand context.
           
           CRITICAL SAFETY:
           - Only use 'move_card' when the user explicitly asks to move something to a specific list.
@@ -429,7 +476,27 @@ export async function POST(req: Request) {
              
              let toolResult = "";
              try {
-                if (functionName === "get_boards") {
+                if (functionName === "list_files") {
+                    const rootDir = process.cwd();
+                    const targetPath = path.resolve(rootDir, functionArgs.dir || '.');
+                    if (!targetPath.startsWith(rootDir)) throw new Error("Access Denied");
+                    const files = await fs.promises.readdir(targetPath);
+                    toolResult = JSON.stringify(files);
+                    await activityLogger.log('system', 'Listed Files', `Listed files in ${functionArgs.dir || '.'}`);
+                } else if (functionName === "read_file") {
+                    const rootDir = process.cwd();
+                    const targetPath = path.resolve(rootDir, functionArgs.filepath);
+                    if (!targetPath.startsWith(rootDir)) throw new Error("Access Denied");
+                    toolResult = await fs.promises.readFile(targetPath, 'utf-8');
+                    await activityLogger.log('system', 'Read File', `Read file ${functionArgs.filepath}`);
+                } else if (functionName === "write_file") {
+                    const rootDir = process.cwd();
+                    const targetPath = path.resolve(rootDir, functionArgs.filepath);
+                    if (!targetPath.startsWith(rootDir)) throw new Error("Access Denied");
+                    await fs.promises.writeFile(targetPath, functionArgs.content, 'utf-8');
+                    toolResult = "File written successfully.";
+                    await activityLogger.log('system', 'Wrote File', `Modified file ${functionArgs.filepath}`);
+                } else if (functionName === "get_boards") {
                     const boards = await trelloClient.getBoards();
                     toolResult = JSON.stringify(boards.map(b => ({ id: b.id, name: b.name })));
                     await activityLogger.log('trello', 'Fetched Boards', `Retrieved ${boards.length} boards`);

@@ -68,6 +68,34 @@ const toolsDefinition = [
   {
     type: "function",
     function: {
+      name: "create_directory",
+      description: "Create a new directory.",
+      parameters: {
+        type: "object",
+        properties: {
+          dir: { type: "string", description: "Directory path relative to root" }
+        },
+        required: ["dir"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "delete_item",
+      description: "Delete a file or directory. Recursive if directory.",
+      parameters: {
+        type: "object",
+        properties: {
+          filepath: { type: "string", description: "Path relative to root" }
+        },
+        required: ["filepath"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
       name: "get_boards",
       description: "Get a list of all Trello boards associated with the account.",
       parameters: {
@@ -386,7 +414,13 @@ export async function POST(req: Request) {
           - You can LIST files in the dashboard directory using 'list_files'.
           - You can READ any file using 'read_file'.
           - You can EDIT any file using 'write_file'.
-          - BE CAREFUL when editing. Ensure you read the file first to understand context.
+          - You can CREATE directories using 'create_directory'.
+          - You can DELETE files/directories using 'delete_item'.
+          - BE CAREFUL when editing/deleting. Ensure you read context first.
+          
+          MULTI-FILE EDITING:
+          - If you need to edit multiple files, you can call 'write_file' multiple times in sequence.
+          - Always explain what you are editing before each step.
           
           CRITICAL SAFETY:
           - Only use 'move_card' when the user explicitly asks to move something to a specific list.
@@ -493,9 +527,32 @@ export async function POST(req: Request) {
                     const rootDir = process.cwd();
                     const targetPath = path.resolve(rootDir, functionArgs.filepath);
                     if (!targetPath.startsWith(rootDir)) throw new Error("Access Denied");
+                    
+                    // Ensure directory exists
+                    await fs.promises.mkdir(path.dirname(targetPath), { recursive: true });
+                    
                     await fs.promises.writeFile(targetPath, functionArgs.content, 'utf-8');
                     toolResult = "File written successfully.";
                     await activityLogger.log('system', 'Wrote File', `Modified file ${functionArgs.filepath}`);
+                } else if (functionName === "create_directory") {
+                    const rootDir = process.cwd();
+                    const targetPath = path.resolve(rootDir, functionArgs.dir);
+                    if (!targetPath.startsWith(rootDir)) throw new Error("Access Denied");
+                    await fs.promises.mkdir(targetPath, { recursive: true });
+                    toolResult = "Directory created.";
+                    await activityLogger.log('system', 'Created Dir', `Created directory ${functionArgs.dir}`);
+                } else if (functionName === "delete_item") {
+                    const rootDir = process.cwd();
+                    const targetPath = path.resolve(rootDir, functionArgs.filepath);
+                    if (!targetPath.startsWith(rootDir)) throw new Error("Access Denied");
+                    const stat = await fs.promises.stat(targetPath);
+                    if (stat.isDirectory()) {
+                        await fs.promises.rm(targetPath, { recursive: true });
+                    } else {
+                        await fs.promises.unlink(targetPath);
+                    }
+                    toolResult = "Item deleted.";
+                    await activityLogger.log('system', 'Deleted Item', `Deleted ${functionArgs.filepath}`);
                 } else if (functionName === "get_boards") {
                     const boards = await trelloClient.getBoards();
                     toolResult = JSON.stringify(boards.map(b => ({ id: b.id, name: b.name })));

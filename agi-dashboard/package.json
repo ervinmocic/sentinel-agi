@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@elevenlabs/elevenlabs-js": "^2.33.0",
+    "@google/generative-ai": "^0.24.1",
     "@tavily/core": "^0.7.1",
     "duck-duck-scrape": "^2.2.7",
     "katex": "^0.16.28",

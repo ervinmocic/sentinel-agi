@@ -12,6 +12,7 @@ export interface SystemSettings {
   elevenlabs_voice_id: string;
   tavily_api_key: string;
   wolfram_app_id: string;
+  google_api_key: string;
   wordpress_site_url: string;
   wordpress_secret_key: string;
 }
@@ -25,6 +26,7 @@ const DEFAULT_SETTINGS: SystemSettings = {
   elevenlabs_voice_id: '',
   tavily_api_key: '',
   wolfram_app_id: '',
+  google_api_key: '',
   wordpress_site_url: '',
   wordpress_secret_key: ''
 };

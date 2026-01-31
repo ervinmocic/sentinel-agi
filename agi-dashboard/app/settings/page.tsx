@@ -15,6 +15,7 @@ export default function SettingsPage() {
   const [elevenVoiceId, setElevenVoiceId] = useState('');
   const [tavilyKey, setTavilyKey] = useState('');
   const [wolframKey, setWolframKey] = useState('');
+  const [googleKey, setGoogleKey] = useState('');
   const [wpUrl, setWpUrl] = useState('');
   const [wpSecret, setWpSecret] = useState('');
   const [status, setStatus] = useState('');
@@ -45,6 +46,7 @@ export default function SettingsPage() {
         setElevenVoiceId(data.elevenlabs_voice_id || '');
         setTavilyKey(data.tavily_api_key || '');
         setWolframKey(data.wolfram_app_id || '');
+        setGoogleKey(data.google_api_key || '');
         setWpUrl(data.wordpress_site_url || '');
         setWpSecret(data.wordpress_secret_key || '');
       }
@@ -70,6 +72,7 @@ export default function SettingsPage() {
           elevenlabs_voice_id: elevenVoiceId,
           tavily_api_key: tavilyKey,
           wolfram_app_id: wolframKey,
+          google_api_key: googleKey,
           wordpress_site_url: wpUrl,
           wordpress_secret_key: wpSecret
         })

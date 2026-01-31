@@ -13,7 +13,7 @@ interface Message {
   image?: string; // Base64 image
 }
 
-export function ChatInterface({ apiEndpoint = '/api/chat' }: { apiEndpoint?: string }) {
+export function ChatInterface({ apiEndpoint = '/api/chat', systemTrigger }: { apiEndpoint?: string; systemTrigger?: string | null }) {
   const [messages, setMessages] = useState<Message[]>([
     { role: 'assistant', content: 'Sentinel AI v5.2 online. How can I assist with your company building today?' }
   ]);
@@ -38,6 +38,13 @@ export function ChatInterface({ apiEndpoint = '/api/chat' }: { apiEndpoint?: str
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
+
+  // Handle system triggers (auto-sending messages)
+  useEffect(() => {
+    if (systemTrigger && !isLoading && !processingRef.current) {
+        submitLiveMessage(systemTrigger);
+    }
+  }, [systemTrigger]); // Only dependency is systemTrigger to avoid loops
 
   // Live Mode Logic
   useEffect(() => {

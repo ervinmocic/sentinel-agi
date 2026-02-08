@@ -28,11 +28,11 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark h-full">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased flex h-full bg-black text-white`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased flex h-full text-white overflow-hidden`}
       >
         <GlobalAuth>
           <Sidebar />
-          <main className="flex-1 overflow-y-auto p-8 bg-gray-950">
+          <main className="flex-1 overflow-y-auto relative scrollbar-thin scrollbar-thumb-white/10">
             {children}
           </main>
         </GlobalAuth>

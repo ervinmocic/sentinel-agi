@@ -1,6 +1,6 @@
 'use client';
 
-import { Activity, CreditCard, DollarSign, Users, Mail, Server, Database, Zap, Clock, Shield, Globe, LayoutDashboard, Bell } from "lucide-react";
+import { Activity, CreditCard, DollarSign, Users, Mail, Server, Database, Zap, Clock, Shield, Globe, LayoutDashboard, Bell, Cpu, Radio, BarChart3, Terminal } from "lucide-react";
 import { ChatInterface } from "@/components/ChatInterface";
 import { NewOperationModal } from "@/components/NewOperationModal";
 import { ProtocolsModal } from "@/components/ProtocolsModal";
@@ -55,12 +55,9 @@ export default function Home() {
         if (res.ok) {
           const data: Operation[] = await res.json();
           
-          // Check for newly created operations (diffing with ref)
           const prevIds = new Set(prevOperationsRef.current.map(o => o.id));
           const newOps = data.filter(o => !prevIds.has(o.id));
           
-          // If a new operation is found that is running/queued but has NO steps, auto-start it
-          // (This catches AI-created operations)
           newOps.forEach(op => {
              if ((op.status === 'running' || op.status === 'queued') && op.steps.length === 0) {
                  setChatTrigger(`SYSTEM COMMAND: New AI-Created Operation "${op.title}" detected.
@@ -140,7 +137,6 @@ export default function Home() {
           setWpStatus('Connected');
           return;
         }
-        // 400s are typically "not configured" (missing URL/secret)
         if (res.status === 400 || res.status === 401) {
           setWpStatus('Needs setup');
           return;
@@ -153,7 +149,6 @@ export default function Home() {
 
     fetchData();
     checkWordpress();
-    // Poll for activities every 10 seconds
     const interval = setInterval(fetchData, 10000);
     return () => clearInterval(interval);
   }, []);
@@ -166,7 +161,6 @@ export default function Home() {
         body: JSON.stringify({ title, description, type }),
       });
       if (res.ok) {
-        // Optimistic update or wait for poll
         const newOp = await res.json();
         setOperations(prev => [newOp, ...prev]);
         setChatTrigger(`SYSTEM COMMAND: New Operation "${newOp.title}" created.
@@ -174,7 +168,7 @@ export default function Home() {
         2. IF NO: Use 'send_notification' (type: action_required) to ask the user.
         3. IF YES: Immediately call 'web_search' or other tools to begin.
         4. EXECUTE: Do not stop after one search. Iterate.`);
-        setTimeout(() => setChatTrigger(null), 100); // Clear trigger
+        setTimeout(() => setChatTrigger(null), 100);
       }
     } catch (e) {
       console.error("Failed to create operation", e);
@@ -234,7 +228,7 @@ export default function Home() {
   const endedOps = operations.filter(o => o.status === 'completed' || o.status === 'failed').length;
 
   return (
-    <div className="space-y-8 pb-8">
+    <div className="min-h-screen text-white p-4 md:p-8">
       <NewOperationModal 
         isOpen={isOpModalOpen} 
         onClose={() => setIsOpModalOpen(false)} 
@@ -257,205 +251,196 @@ export default function Home() {
         onAction={handleNotificationAction}
       />
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight text-white">Command Center</h2>
-        <div className="flex gap-2">
-           <button 
+      {/* Futuristic Header */}
+      <header className="flex flex-col md:flex-row items-center justify-between mb-10 gap-4">
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <div className="absolute inset-0 bg-blue-500 blur-xl opacity-50 rounded-full animate-pulse"></div>
+            <div className="relative p-3 bg-black/40 border border-blue-500/30 rounded-full backdrop-blur-sm">
+              <Cpu className="h-8 w-8 text-blue-400" />
+            </div>
+          </div>
+          <div>
+            <h1 className="text-4xl font-black tracking-tighter uppercase text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">
+              Sentinel
+            </h1>
+            <p className="text-xs font-mono text-blue-300/60 tracking-[0.3em] uppercase">Autonomous Operations Unit</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <StatusBadge label="SYSTEM" status="ONLINE" color="green" />
+          <StatusBadge label="NETWORK" status="SECURE" color="blue" />
+          
+          <div className="h-8 w-px bg-white/10 mx-2"></div>
+
+          <button 
              onClick={() => setIsNotificationsOpen(true)}
-             className="relative px-3 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors mr-2"
+             className="relative p-3 rounded-full hover:bg-white/5 transition-all group"
            >
-             <Bell className="h-5 w-5" />
+             <Bell className="h-5 w-5 text-gray-400 group-hover:text-white transition-colors" />
              {unreadCount > 0 && (
-               <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] flex items-center justify-center text-white font-bold border border-gray-900">
-                 {unreadCount}
-               </span>
+               <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]"></span>
              )}
            </button>
-           <button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-sm font-medium transition-colors">
-             System Logs
-           </button>
+           
            <button 
              onClick={() => setIsOpModalOpen(true)}
-             className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors shadow-lg shadow-blue-900/20"
+             className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-bold tracking-wide transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)] hover:shadow-[0_0_30px_rgba(37,99,235,0.5)] flex items-center gap-2"
            >
-             New Operation
+             <Zap className="h-4 w-4 fill-current" />
+             INITIATE
            </button>
         </div>
-      </div>
+      </header>
       
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* Main Grid Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
         
-        {/* Left Column (Stats & Integrations) */}
-        <div className="lg:col-span-3 space-y-6">
-          {/* Hero Status Card */}
-          <div className="rounded-2xl bg-yellow-500 p-6 text-black shadow-xl shadow-yellow-900/10">
-            <div className="flex justify-between items-start mb-4">
-               <div>
-                 <p className="font-semibold opacity-80">Active Protocols</p>
-                 <h3 className="text-5xl font-bold mt-2">{operations.length}</h3>
-               </div>
-               <div className="p-2 bg-black/10 rounded-lg">
-                 <Activity className="h-6 w-6" />
-               </div>
+        {/* Left Column: Stats & Nodes */}
+        <div className="lg:col-span-3 space-y-6 flex flex-col">
+          
+          {/* Active Protocols Card - Holographic feel */}
+          <div className="glass-card rounded-2xl p-6 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+              <Activity className="h-24 w-24 text-white" />
             </div>
             
-            <div className="grid grid-cols-3 gap-2 mt-8">
-               <div className="bg-black/10 rounded-lg p-3 text-center">
-                 <span className="block text-xl font-bold">{activeOps}</span>
-                 <span className="text-xs opacity-70 font-medium uppercase">Active</span>
-               </div>
-               <div className="bg-black/10 rounded-lg p-3 text-center">
-                 <span className="block text-xl font-bold">{endedOps}</span>
-                 <span className="text-xs opacity-70 font-medium uppercase">Ended</span>
-               </div>
-               <div className="bg-black/10 rounded-lg p-3 text-center">
-                 <span className="block text-xl font-bold">{pendingOps}</span>
-                 <span className="text-xs opacity-70 font-medium uppercase">Pending</span>
-               </div>
+            <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-1">Active Protocols</h3>
+            <div className="flex items-baseline gap-2 mb-6">
+              <span className="text-5xl font-bold text-white tracking-tight">{operations.length}</span>
+              <span className="text-sm text-green-400 font-mono">running</span>
             </div>
+
+            <div className="grid grid-cols-3 gap-3">
+               <StatBox value={activeOps} label="Active" color="text-blue-400" border="border-blue-500/20" />
+               <StatBox value={endedOps} label="Ended" color="text-purple-400" border="border-purple-500/20" />
+               <StatBox value={pendingOps} label="Queued" color="text-yellow-400" border="border-yellow-500/20" />
+            </div>
+
             <button 
               onClick={() => setIsProtocolsModalOpen(true)}
-              className="w-full mt-6 bg-white text-black font-bold py-3 rounded-xl hover:bg-gray-100 transition-colors"
+              className="w-full mt-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
-              View Protocols
+              View All Protocols
             </button>
           </div>
 
-          {/* Integrations List */}
-          <div className="rounded-2xl border border-gray-800 bg-gray-900/50 p-6">
+          {/* Neural Links (Integrations) */}
+          <div className="glass-card rounded-2xl p-6 flex-1">
              <div className="flex items-center justify-between mb-6">
                <div>
-                 <h3 className="text-lg font-semibold text-white">Neural Links</h3>
-                 <p className="text-sm text-gray-400">System Integrations</p>
+                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                   <Radio className="h-4 w-4 text-purple-400" />
+                   Neural Nodes
+                 </h3>
                </div>
-               <span className="text-2xl font-bold text-white">4</span>
+               <span className="text-xs font-mono text-gray-500 bg-white/5 px-2 py-1 rounded">V 2.0.4</span>
              </div>
 
-             <div className="space-y-4">
-               <IntegrationRow 
-                 icon={Server} 
-                 name="Trello" 
-                 status="Connected" 
-                 color="text-blue-400" 
-                 bg="bg-blue-400/10"
-               />
-               <IntegrationRow 
-                 icon={Mail} 
-                 name="Mailchimp" 
-                 status={mailchimpStats.loading ? "Connecting..." : "Connected"} 
-                 color="text-yellow-400" 
-                 bg="bg-yellow-400/10"
-               />
-               <IntegrationRow 
-                 icon={Zap} 
-                 name="Reasoning Engine" 
-                 status="Active" 
-                 color="text-green-400" 
-                 bg="bg-green-400/10"
-               />
-               <IntegrationRow 
-                 icon={Globe} 
-                 name="WordPress" 
-                 status={wpStatus} 
-                 color="text-purple-400" 
-                 bg="bg-purple-400/10"
-               />
+             <div className="space-y-3">
+               <IntegrationRow icon={Server} name="Trello Board" status="Connected" color="text-blue-400" />
+               <IntegrationRow icon={Mail} name="Mailchimp" status={mailchimpStats.loading ? "Syncing..." : "Active"} color="text-yellow-400" />
+               <IntegrationRow icon={Zap} name="AI Engine" status="Online" color="text-green-400" />
+               <IntegrationRow icon={Globe} name="WordPress" status={wpStatus} color="text-pink-400" />
              </div>
-             
-             <button className="w-full mt-6 text-sm text-gray-400 hover:text-white transition-colors">
-               View All Integrations
-             </button>
           </div>
         </div>
 
-        {/* Middle Column (Chat & Analytics) */}
+        {/* Middle Column: Chat & Visuals */}
         <div className="lg:col-span-6 space-y-6">
-          {/* Chat Interface - Taking the 'Timeline' spot */}
-          <div className="h-[500px]">
+          {/* Chat Interface - styled as a terminal/feed */}
+          <div className="glass-card rounded-2xl h-[550px] relative overflow-hidden flex flex-col">
+             <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent pointer-events-none"></div>
              <ChatInterface systemTrigger={chatTrigger} />
           </div>
 
-          {/* Analytics Row */}
+          {/* Data Viz Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Views Chart */}
-            <div className="rounded-2xl border border-gray-800 bg-gray-900/50 p-6">
-               <h3 className="font-semibold text-white mb-1">System Load</h3>
-               <p className="text-xs text-gray-400 mb-6">Tokens processed per hour</p>
+            
+            {/* System Load Chart */}
+            <div className="glass-card rounded-2xl p-6 relative group">
+               <div className="flex items-center justify-between mb-4">
+                 <h3 className="font-bold text-white flex items-center gap-2">
+                   <BarChart3 className="h-4 w-4 text-cyan-400" />
+                   System Load
+                 </h3>
+                 <span className="text-[10px] text-cyan-400/70 border border-cyan-500/30 px-1.5 py-0.5 rounded">LIVE</span>
+               </div>
                
-               <div className="h-40 flex items-end gap-2 justify-between px-2">
-                 {[40, 70, 45, 90, 60, 80, 50].map((h, i) => (
-                   <div key={i} className="w-full bg-gray-800 rounded-t-sm relative group">
+               <div className="h-32 flex items-end gap-3 justify-between px-2 pt-4">
+                 {[35, 60, 45, 85, 55, 75, 40].map((h, i) => (
+                   <div key={i} className="w-full bg-white/5 rounded-t-sm relative overflow-hidden">
                      <div 
-                        className="absolute bottom-0 w-full bg-blue-500 rounded-t-sm transition-all duration-500 hover:bg-blue-400"
+                        className="absolute bottom-0 w-full bg-gradient-to-t from-cyan-600 to-blue-400 transition-all duration-1000 group-hover:shadow-[0_0_15px_rgba(6,182,212,0.5)]"
                         style={{ height: `${h}%` }}
                      />
                    </div>
                  ))}
                </div>
-               <div className="flex justify-between mt-4 text-xs text-gray-500 font-mono">
-                 <span>00:00</span>
-                 <span>12:00</span>
-                 <span>23:59</span>
+            </div>
+
+            {/* Audience Reach Ring */}
+            <div className="glass-card rounded-2xl p-6 relative overflow-hidden flex flex-col items-center justify-center">
+               <h3 className="font-bold text-white mb-2 self-start w-full flex justify-between">
+                 <span>Reach</span>
+                 <Users className="h-4 w-4 text-purple-400" />
+               </h3>
+               
+               <div className="relative h-32 w-32 my-2">
+                  <svg className="h-full w-full transform -rotate-90">
+                    <circle cx="64" cy="64" r="56" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-white/5" />
+                    <circle 
+                      cx="64" cy="64" r="56" 
+                      stroke="url(#gradient)" 
+                      strokeWidth="8" 
+                      fill="transparent" 
+                      strokeDasharray={351.86} 
+                      strokeDashoffset={351.86 * (1 - (mailchimpStats.openRate / 100))} 
+                      strokeLinecap="round"
+                      className="transition-all duration-1000 ease-out shadow-[0_0_20px_rgba(192,132,252,0.5)]" 
+                    />
+                    <defs>
+                      <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#818cf8" />
+                        <stop offset="100%" stopColor="#c084fc" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                     <span className="text-3xl font-bold text-white tracking-tighter">{mailchimpStats.openRate.toFixed(1)}%</span>
+                     <span className="text-[10px] text-purple-300 font-mono">ENGAGEMENT</span>
+                  </div>
                </div>
             </div>
 
-            {/* Revenue/Stats Donut */}
-            <div className="rounded-2xl border border-gray-800 bg-gray-900/50 p-6 relative overflow-hidden">
-               <h3 className="font-semibold text-white mb-1">Audience Reach</h3>
-               <p className="text-xs text-gray-400 mb-6">Mailchimp engagement</p>
-               
-               <div className="flex items-center justify-center py-4 relative">
-                 <div className="relative h-32 w-32">
-                    <svg className="h-full w-full transform -rotate-90">
-                      <circle cx="64" cy="64" r="56" stroke="currentColor" strokeWidth="12" fill="transparent" className="text-gray-800" />
-                      <circle 
-                        cx="64" cy="64" r="56" 
-                        stroke="currentColor" 
-                        strokeWidth="12" 
-                        fill="transparent" 
-                        strokeDasharray={351.86} 
-                        strokeDashoffset={351.86 * (1 - (mailchimpStats.openRate / 100))} 
-                        className="text-yellow-500 transition-all duration-1000 ease-out" 
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                       <span className="text-2xl font-bold text-white">{mailchimpStats.openRate.toFixed(1)}%</span>
-                       <span className="text-[10px] text-gray-400 uppercase">Open Rate</span>
-                    </div>
-                 </div>
-               </div>
-               
-               <div className="flex justify-center gap-4 text-xs mt-2">
-                 <div className="flex items-center gap-1.5">
-                    <div className="w-2 h-2 rounded-full bg-yellow-500" />
-                    <span className="text-gray-300">Opens</span>
-                 </div>
-                 <div className="flex items-center gap-1.5">
-                    <div className="w-2 h-2 rounded-full bg-gray-700" />
-                    <span className="text-gray-500">Unread</span>
-                 </div>
-               </div>
-            </div>
           </div>
         </div>
 
-        {/* Right Column (Activity Feed) */}
-        <div className="lg:col-span-3 space-y-6">
-          <div className="rounded-2xl border border-gray-800 bg-gray-900/50 p-6 h-[600px] flex flex-col">
-            <div className="flex items-center justify-between mb-6 flex-shrink-0">
-               <h3 className="font-semibold text-lg text-white">Activity Log</h3>
-               <Clock className="h-4 w-4 text-gray-500" />
+        {/* Right Column: Activity Stream */}
+        <div className="lg:col-span-3">
+          <div className="glass-card rounded-2xl h-[800px] lg:h-[calc(100vh-8rem)] p-0 flex flex-col overflow-hidden sticky top-6">
+            <div className="p-5 border-b border-white/5 bg-white/5 flex items-center justify-between shrink-0">
+               <h3 className="font-bold text-white flex items-center gap-2">
+                 <Terminal className="h-4 w-4 text-pink-500" />
+                 Log Stream
+               </h3>
+               <div className="flex gap-1">
+                 <div className="w-2 h-2 rounded-full bg-red-500/50"></div>
+                 <div className="w-2 h-2 rounded-full bg-yellow-500/50"></div>
+                 <div className="w-2 h-2 rounded-full bg-green-500/50"></div>
+               </div>
             </div>
 
-            <div className="space-y-6 relative flex-1 overflow-y-auto pr-2 before:absolute before:left-3.5 before:top-3 before:h-[90%] before:w-[1px] before:bg-gray-800">
+            <div className="flex-1 overflow-y-auto p-5 space-y-6 scrollbar-thin">
                {activities.length > 0 ? (
                  activities.map((activity) => (
                     <ActivityLogItem key={activity.id} activity={activity} />
                  ))
                ) : (
-                 <div className="pl-8 text-sm text-gray-500 py-4 italic">No recent activity detected.</div>
+                 <div className="text-center text-sm text-gray-500 py-10 font-mono">
+                   -- NO DATA STREAM --
+                 </div>
                )}
             </div>
           </div>
@@ -466,19 +451,42 @@ export default function Home() {
   );
 }
 
-function IntegrationRow({ icon: Icon, name, status, color, bg }: { icon: any, name: string, status: string, color: string, bg: string }) {
+function StatusBadge({ label, status, color }: { label: string, status: string, color: string }) {
+  const colorMap: Record<string, string> = {
+    green: 'bg-green-500/20 text-green-400 border-green-500/30',
+    blue: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+    red: 'bg-red-500/20 text-red-400 border-red-500/30',
+  };
+  
   return (
-    <div className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-800/50 transition-colors cursor-pointer group">
+    <div className={`hidden md:flex flex-col items-end border-r border-white/10 pr-4 mr-2`}>
+      <span className="text-[10px] text-gray-500 font-mono tracking-wider">{label}</span>
+      <span className={`text-xs font-bold ${color === 'green' ? 'text-green-400' : 'text-blue-400'}`}>{status}</span>
+    </div>
+  );
+}
+
+function StatBox({ value, label, color, border }: { value: number, label: string, color: string, border: string }) {
+  return (
+    <div className={`bg-black/20 rounded-lg p-3 text-center border ${border} backdrop-blur-sm`}>
+      <span className={`block text-2xl font-bold ${color}`}>{value}</span>
+      <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">{label}</span>
+    </div>
+  );
+}
+
+function IntegrationRow({ icon: Icon, name, status, color }: { icon: any, name: string, status: string, color: string }) {
+  return (
+    <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 transition-all cursor-pointer group">
       <div className="flex items-center gap-3">
-        <div className={`p-2 rounded-lg ${bg} ${color}`}>
-          <Icon className="h-5 w-5" />
+        <div className={`p-2 rounded-lg bg-black/40 ${color} group-hover:shadow-[0_0_10px_currentColor] transition-shadow`}>
+          <Icon className="h-4 w-4" />
         </div>
-        <div>
-          <p className="font-medium text-white group-hover:text-blue-400 transition-colors">{name}</p>
-        </div>
+        <p className="text-sm font-medium text-gray-200 group-hover:text-white transition-colors">{name}</p>
       </div>
-      <div className={`text-xs font-medium px-2 py-1 rounded-full ${bg} ${color} bg-opacity-10`}>
-        {status}
+      <div className="flex items-center gap-2">
+        <div className={`w-1.5 h-1.5 rounded-full ${status === 'Connected' || status === 'Active' || status === 'Online' ? 'bg-green-500 shadow-[0_0_5px_#22c55e]' : 'bg-gray-500'}`} />
+        <span className="text-[10px] font-mono text-gray-400">{status}</span>
       </div>
     </div>
   );
@@ -489,14 +497,15 @@ function ActivityLogItem({ activity }: { activity: ActivityLog }) {
   const timeAgo = formatTimeAgo(activity.timestamp);
 
   return (
-    <div className="relative pl-10 animate-in fade-in slide-in-from-left-2 duration-300">
-      <div className={`absolute left-0 top-1 p-1.5 rounded-full border ${bg} z-10 bg-gray-950`}>
-         <Icon className={`h-3 w-3 ${color}`} />
-      </div>
-      <div>
-        <h4 className="text-sm font-medium text-white">{activity.title}</h4>
-        <p className="text-xs text-gray-400 mt-0.5 break-words">{activity.description}</p>
-        <span className="text-[10px] text-gray-600 mt-1 block">{timeAgo}</span>
+    <div className="relative pl-6 border-l border-white/10 pb-1 group">
+      <div className={`absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full border border-black ${bg} ${color} shadow-[0_0_8px_currentColor] group-hover:scale-125 transition-transform`}></div>
+      <div className="group-hover:translate-x-1 transition-transform duration-300">
+        <div className="flex items-center justify-between mb-1">
+          <span className={`text-xs font-bold ${color} uppercase tracking-wider`}>{activity.type}</span>
+          <span className="text-[10px] text-gray-600 font-mono">{timeAgo}</span>
+        </div>
+        <h4 className="text-sm font-medium text-gray-200 leading-tight mb-1">{activity.title}</h4>
+        <p className="text-xs text-gray-500 line-clamp-2">{activity.description}</p>
       </div>
     </div>
   );
@@ -505,21 +514,21 @@ function ActivityLogItem({ activity }: { activity: ActivityLog }) {
 function getActivityConfig(type: ActivityLog['type']) {
   switch (type) {
     case 'trello':
-      return { icon: Server, color: 'text-blue-400', bg: 'border-blue-500/30' };
+      return { icon: Server, color: 'bg-blue-400', bg: 'bg-blue-400' };
     case 'mailchimp':
-      return { icon: Mail, color: 'text-yellow-400', bg: 'border-yellow-500/30' };
+      return { icon: Mail, color: 'bg-yellow-400', bg: 'bg-yellow-400' };
     case 'openai':
-      return { icon: Zap, color: 'text-green-400', bg: 'border-green-500/30' };
+      return { icon: Zap, color: 'bg-green-400', bg: 'bg-green-400' };
     case 'wordpress':
-      return { icon: Globe, color: 'text-purple-400', bg: 'border-purple-500/30' };
+      return { icon: Globe, color: 'bg-purple-400', bg: 'bg-purple-400' };
     case 'memory':
-      return { icon: Database, color: 'text-pink-400', bg: 'border-pink-500/30' };
+      return { icon: Database, color: 'bg-pink-400', bg: 'bg-pink-400' };
     case 'security':
-      return { icon: Shield, color: 'text-red-400', bg: 'border-red-500/30' };
+      return { icon: Shield, color: 'bg-red-500', bg: 'bg-red-500' };
     case 'user':
-      return { icon: Users, color: 'text-gray-400', bg: 'border-gray-500/30' };
+      return { icon: Users, color: 'bg-gray-400', bg: 'bg-gray-400' };
     default:
-      return { icon: LayoutDashboard, color: 'text-gray-400', bg: 'border-gray-500/30' };
+      return { icon: LayoutDashboard, color: 'bg-gray-400', bg: 'bg-gray-400' };
   }
 }
 
@@ -528,10 +537,10 @@ function formatTimeAgo(timestamp: string) {
   const now = new Date();
   const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-  if (seconds < 60) return 'Just now';
+  if (seconds < 60) return 'NOW';
   const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 60) return `${minutes}m`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
+  if (hours < 24) return `${hours}h`;
+  return `${Math.floor(hours / 24)}d`;
 }
